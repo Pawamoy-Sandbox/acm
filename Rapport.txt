@@ -1,0 +1,215 @@
+
+**********************************************************************************
+				INTRODUCTION
+**********************************************************************************
+
+Projet de Structures de Données et Algorithmique 2, semestre 4 licence 2 Informatique
+Utilisation de l'algorithme de Prim pour calculer l'arbre couvrant minimal d'un graphe connexe
+
+Algorithme de Prim :
+1. On choisit un sommet de départ d.
+2. On choisit l'arête de poids minimal parmi celles incidentes à d, et on l'ajoute à l'arbre en construction.
+Si plusieurs arêtes ont le même poids minimal, on choisit n'importe laquelle.
+3. On itère en choisissant à chaque fois l'arête de poids minimal parmi celles qui sont incidentes à l'arbre, et
+ne créent pas de cycle.
+
+
+
+**********************************************************************************
+				SPECIFICATIONS
+**********************************************************************************
+
+spec SOMMET étend BASE
+sorte Sommet
+
+	opérations :
+		ns : Chaine -> Sommet // nouveau sommet
+		ms : Sommet Chaine -> Sommet // modifier un sommet
+		egs : Sommet Sommet -> Bool // égalité entre 2 sommets
+		
+	axiomes :
+		egs(ns(c1), ns(c2)) = si c1==c2 alors Vrai sinon Faux
+		egs(ns(c1), ms(s, c2)) = si c1==c2 alors Vrai sinon Faux
+		egs(ms(s, c1), ns(c2)) = si c1==c2 alors Vrai sinon Faux
+		egs(ms(s1, c1), ms(s2, c2)) = si c1==c2 alors Vrai sinon Faux
+		
+	préconditions : c1 et c2 non nulles
+
+________________________
+
+spec ARETE étend BASE
+sorte Arete
+
+	opérations :
+		na : Ent -> Arete // nouvelle arete
+		ma : Arete Ent -> Arete // modifier une arete
+		ega : Arete Arete -> Bool // égalité entre 2 aretes
+		pa : Arete -> Ent // renvoie le poids d'une arete
+		
+	axiomes :
+		ega(na(p1), na(p2)) = si p1==p2 alors Vrai sinon Faux
+		ega(na(p1), ma(a, p2)) = si p1==p2 alors Vrai sinon Faux
+		ega(ma(a, p1), na(p2)) = si p1==p2 alors Vrai sinon Faux
+		ega(ma(a1, p1), ma(a2, p2)) = si p1==p2 alors Vrai sinon Faux
+		
+		pa(na(p)) = p
+		pa(ma(a, p)) = p
+		
+	préconditions : /
+
+________________________
+
+spec GRAPHE étend ARETE, SOMMET
+sorte Graphe
+
+	opérations :
+		ng : Nat -> Graphe // nouveau graphe
+		adja : Graphe Sommet Arete Sommet -> Graphe // ajout d'une arete
+		adjs : Graphe Sommet -> Graphe // ajout d'un sommet
+		supa : Graphe Sommet Sommet -> Graphe // suppression d'une arete
+		sups : Graphe Sommet -> Graphe // suppression d'un sommet
+		moda : Graphe Sommet Ent Sommet -> Graphe // modification d'une arete
+		mods : Graphe Sommet Chaine -> Graphe // modification d'un sommet
+		exa : Graphe Sommet Sommet -> Bool // existence d'une arete
+		exs : Graphe Sommet -> Bool // existence d'un sommet
+		tg : Graphe -> Nat // taille du graphe (nombre max de sommets)
+		nbs : Graphe -> Nat // nombre de sommets présents dans le graphe
+		noms : Graphe Nat -> Sommet // renvoie le nom d'un sommet
+		nums : Graphe Sommet -> Nat // renvoie le numéro d'un sommet
+		poids : Graphe Sommet Sommet -> Ent // renvoie le poids d'une arete
+		va : Graphe -> Bool // test de vacuité sur les aretes
+		vs : Graphe -> Bool // test de vacuité sur les sommets
+		
+	axiomes :
+		supa(adja(g,s1,p,s2), s3, s4) = si s1==s2 et s3==s4 alors g sinon adja(supa(g,s3,s4),s1,p,s2)
+		supa(adjs(g,s1),s2,s3) = si s2==s1 ou s3==s1 alors adjs(g,s1) sinon adjs(supa(g,s2,s3),s1)
+		
+		sups(adja(g,s1,p,s2), s3) = si s3==s1 ou s3==s2 alors g sinon adja(sups(g,s3),s1,s2)
+		sups(adjs(g,s1),s2) = si s1==s2 alors g sinon adjs(sups(g,s2),s1)
+		
+		moda(adja(g,s1,p1,s2), s3, p2, s4) = si s3==s1 et s4==s2 alors adja(g,s1,p2,s2) sinon adja(moda(g,s3,p2,s4),s1,p1,s2)
+		moda(adjs(g,s1),s2,p,s3) = adjs(moda(g,s2,p,s3),s1)
+		
+		mods(adja(g,s1,p,s2), s3, c) = si s3==s1 alors adja(mods(g,s1,c),s1,p,s2) sinon si s3==s2 alors adja(mods(g,s2,c),s1,p,s2) sinon adja(mods(g,s3,c),s1,p,s2)
+		mods(adjs(g,s1), s2, c) = si s2==s1 alors adjs(g, ms(s1,c)) sinon adjs(mods(g,s2,c),s1)
+		
+		exa(ng(n), s1, s2) = Faux
+		exa(adja(g, s1, p, s2), s3, s4) = si s3==s1 et s4==s2 alors Vrai sinon exa(g, s3, s4)
+		exa(ajds(g,s1), s2, s3) = si s2==s1 ou s3==s1 alors Faux sinon exa(g, s2, s3)
+		
+		exs(ng(n), s) = Faux
+		exs(adja(g, s1, p, s2), s3) = si s3==s1 ou s3==s2 alors Vrai sinon exs(g, s3)
+		exs(adjs(g, s1), s2) = si s2==s1 alors Vrai sinon exs(g,s2)
+		
+		tg(ng(n)) = n
+		tg(adja(g,s1,p,s2)) = tg(g)
+		tg(adjs(g,s)) = tg(g)
+		
+		nbs(ng(n)) = 0
+		nbs(adja(g,s1,p,s2)) = nbs(g)
+		nbs(adjs(g,s)) = nbs(g)+1
+		
+		noms(adja(g,s1,p,s2),i) = noms(g,i)
+		noms(adjs(g,s),i) = si nbs(g)==i alors s sinon noms(g,i)
+		
+		nums(adja(g,s1,p,s2), s3) = nums(g,s3)
+		nums(adjs(g,s1), s2) = si s2==s1 alors nbs(g) sinon nums(g,s2)
+		
+		poids(adja(g,s1,p,s2), s3, s4) = si s3==s1 et s4==s2 alors p sinon poids(g,s3,s4)
+		poids(adjs(g,s1), s2, s3) = poids(g,s2,s3)
+		
+		va(ng(n)) = Vrai
+		va(adja(g,s1,p,s2)) = Faux
+		va(adjs(g,s)) = va(g)
+		
+		vs(ng(n)) = Vrai
+		vs(adja(g,s1,p,s2)) = Faux
+		vs(adjs(g,s)) = Faux
+
+	préconditions :
+		supa(g,s1,s2) = !va(g)
+		sups(g,s) = !vs(g)
+		moda(g,s1,p,s2) = !va(g)
+		noms(g,i) = !vs(g)
+		nums(g,i) = !vs(g)
+		poids(g,s1,s2) = !va(g)
+		poids(g,s1,s2) = nums(g,s1)<nbs(g)-1 et nums(g,s2)<nbs(g)-1
+
+
+**********************************************************************************
+				DISCUSSION DE L'IMPLEMENTATION
+**********************************************************************************
+
+Un sommet est identifié par une chaine de caractères, donc nous avons choisi
+de définir la sorte Sommet comme une chaine de caractères (char*).
+Une arête est identifiée par un poids négatif, positif ou nul. Nous avons donc implémenté
+la sorte Arete comme un entier signé.
+
+Pour la sorte Graphe, nous avons repris les travaux réalisés au cours du semestre
+et donc utilisé une matrice, de taille nombre_sommets * nombre_sommets.
+Une telle matrice permet "d'orienter" un graphe, ou bien de stocker au maximum
+deux arêtes entre chaque sommets. Comme une arête peut prendre n'importe quelle valeur
+entière signée, nous avons redéfini la sorte Arete comme un POINTEUR sur un entier signé.
+De cette façon, une arête valant NULL dans la matrice indique que l'arête n'existe pas.
+Nous avions également besoin de la taille du graphe, et du nombre de sommets présents.
+
+Nous avons principalement utilisé un style de programmation avec mutation (et aspect fonctionnel).
+La structure de donnée que nous avons utilisé est la file. Nous n'avons pas eu besoin ni de listes,
+ni de piles, ni d'arbres.
+
+Au fur et à mesure de l'avancement, nous nous sommes rendus compte que la sorte Graphe
+n'était pas très optimisée, à cause du stockage des arêtes dans une matrice.
+En effet, cette matrice est rarement remplie à plus de la moitié de sa contenance.
+En revanche, tous ses éléments nuls valent NULL, ce qui ne prend pas beaucoup d'espace mémoire.
+
+Toutes les fonctions sont codées de manière itérative, exceptée creeCycle qui est récursive.
+
+Concernant la fonction sups (suppression d'un sommet), il fallait procéder en plusieurs
+étapes pour être sûr de la consistance du graphe résultant :
+- obtenir le num N du sommet
+- vider la ligne N, vider la colonne N
+- décrémenter nombre de sommets
+- remonter la dernière ligne dans la ligne N
+- décaler la dernière colonne dans la colonne N
+- sommet[N] devient sommet[nbs] (dernier sommet)
+
+Nous avons ainsi eu recours à quelques fonctions supplémentaires telles que
+lastRowUp et lastColLeft, permettant de décaler les éléments.
+
+Pour la fonction de tri de la file, nous avons utilisé un tri à bulle.
+
+Organigramme d'appel de fonctions :
+(voir image organigramme.jpg)
+	
+**********************************************************************************
+				TESTS
+**********************************************************************************
+
+Nous avons testé le programme sur différents graphe, et n'avons eu que des résultats positifs.
+Le graphe résultat de la fonction prim était bien un arbre couvrant minimal du graphe d'origine.
+Le graphe passé en paramètre au programme DOIT cependant etre connexe,
+sous peine de segmentation fault. Les graphes in, in2 et in4 sont connexes, in3 ne l'est pas.
+Par défaut, le sommet de départ pour Prim est le 2eme ajouté au graphe via la fonction load.
+
+
+
+**********************************************************************************
+				CONCLUSION
+**********************************************************************************
+
+Afin d'optimiser au maximum ce programme, il faut bien définir au départ sur quels types
+de graphe on souhaite travailler. Sont-ils orientés, simples ? Une matrice triangulaire
+supérieure pour le stockage des aretes aurait convenu un peu mieux, mais il n'était
+pas précisé dans le sujet si le graphe traité possédait des aretes multiples ou non
+(ou des boucles).
+
+Concernant l'affichage du graphe avec l'outil Latex et le package Tikz, nous n'avons pas eu 
+le temps de le réaliser. Avec quelques recherches, nous savons cependant qu'il aurait fallu
+écrire un script récupérant les données de l'arbre couvrant minimal dans le fichier
+de sortie du programme, afin de générer un script tikz qui lui même aurait généré :
+	- les sommets
+	- les aretes entre ces sommets
+	- le poids des aretes
+	- la disposition des sommets
+Cela aurait alors permis de générer l'affichage de l'arbre dans un fichier au format pdf 
+en combinant ce script avec Latex.
